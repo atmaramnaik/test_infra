@@ -1,0 +1,1 @@
+{"rsync":{"/vagrant/docker":{"type":"rsync","guestpath":"/vagrant/docker","hostpath":"/Users/atmaramn/Projects/samples/docker/selenium-go/docker","disabled":false,"__vagrantfile":true,"owner":"core","group":"core"}}}
