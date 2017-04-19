@@ -1,0 +1,21 @@
+goserver:
+  build: go-server
+  hostname: go-server
+  ports:
+    - '8153:8153'
+    - '8154:8154'
+  environment:
+    AGENT_AUTO_REGISTER_KEY: 'bc46f2e1-acfa-4025-a8ee-9daa327fbe1c'
+goagent:
+  build: go-agent
+  volumes:
+    - /Users/atmaramn/.m2:/home/go/.m2/
+  links:
+    - goserver
+  environment:
+    GO_SERVER_URL: 'https://go-server:8154/go'
+    AGENT_AUTO_REGISTER_KEY: 'bc46f2e1-acfa-4025-a8ee-9daa327fbe1c'
+    SCREEN_WIDTH: '1360'
+    SCREEN_HEIGHT: '1020'
+    SCREEN_DEPTH: '24'
+
