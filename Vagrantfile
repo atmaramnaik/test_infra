@@ -5,7 +5,7 @@ require 'fileutils'
 Vagrant.require_version '>= 1.7.0'
 VAGRANT_DIR = '/vagrant'
 GOCD_HOST_LOCAL = '192.168.33.66'
-GOCD_PORTS_LOCAL = { 80 => 8153 }
+GOCD_PORTS_LOCAL = { 80 => 8153 , 8154 => 8154}
 COREOS_LOCAL_VERSION = '>=877.1.0'
 CLOUD_CONFIG_PATH = File.join(File.dirname(__FILE__), 'user-data')
 GO_SERVER_IMAGE = 'go_server'
@@ -57,11 +57,9 @@ Vagrant.configure('2') do |config|
       end
 
       script = <<-eos
-      useradd -g 999 -u 999 -b /home -m docker
       mkdir -p /var/lib/coreos-vagrant/ && mv -f /tmp/vagrantfile-user-data /var/lib/coreos-vagrant/
       chmod a+rw /var/run/docker.sock
-      mkdir -p /srv/gocd/go-server
-      chown -R docker:docker /srv/gocd
+      mkdir -p /srv/gocd/go-server/config
       eos
 
       override.vm.provision :shell, inline: script, privileged: true
@@ -72,16 +70,15 @@ Vagrant.configure('2') do |config|
     config.vm.synced_folder './docker/', '/vagrant/docker', type: 'rsync'
 
     setup_provisioner_for_removing_existing_containers_and_cleanup_images config
-
     config.vm.provision :docker do |d|
       d.build_image "#{VAGRANT_DIR}/docker/go-server/",
                     args: "-t #{GO_SERVER_IMAGE} -t #{GO_SERVER_IMAGE}:latest"
 
-      d.run GO_SERVER_IMAGE, image: "#{GO_SERVER_IMAGE}:latest", args: '-i -t -p 80:8153 -p 8154:8154 --hostname=go-server'
+      d.run GO_SERVER_IMAGE, image: "#{GO_SERVER_IMAGE}:latest", args: '-i -t -p 80:8153 -p 8154:8154 --hostname=go-server -v /srv/gocd/go-server:/godata'
 
       GO_AGENTS_IMAGES.each do |agent|
         d.build_image "#{VAGRANT_DIR}/docker/go-agent/", args: "-t #{agent} -t #{agent}:latest --build-arg agent=#{agent}"
-        go_agent_args = "-d -e GO_SERVER_URL=https://go-server:8154/go -e AGENT_AUTO_REGISTER_KEY=bc46f2e1-acfa-4025-a8ee-9daa327fbe1c -e SCREEN_WIDTH=1360 -e SCREEN_HEIGHT=1020 -e SCREEN_DEPTH=24"
+        go_agent_args = "-d -e GO_SERVER_URL=https://#{GOCD_HOST_LOCAL}:8154/go -e AGENT_AUTO_REGISTER_KEY=123456789abcdef -e SCREEN_WIDTH=1360 -e SCREEN_HEIGHT=1020 -e SCREEN_DEPTH=24"
         d.run agent, image: "#{agent}:latest", args: go_agent_args
       end
     end
